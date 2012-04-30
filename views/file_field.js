@@ -154,6 +154,17 @@ SC.FileFieldView = SC.View.extend(SC.DelegateSupport, {
     var del = this.get('delegate') ? this.get('delegate') : this;
     this.invokeDelegateMethod(del, 'fileFieldViewWillSubmit', this);
 
+    // Update the form action
+    this._form.set('action', this.get('formAction'));
+    
+    // Update any hidden fields
+    var hiddenInputs = this.get('hiddenInputs');
+    if (!SC.empty(hiddenInputs)) {
+      for (var i = 0, e = hiddenInputs.get('length'); i < e; i++) {
+        this.updateHiddenFieldValue(hiddenInputs.objectAt(i).key, hiddenInputs.objectAt(i).value);
+      }
+    }
+
     // Complete a run loop so that the form target and action are updated before the form is submitted
     SC.RunLoop.begin();
     // Set the target of our form to be this iFrame
@@ -578,13 +589,25 @@ SC.FileFieldView = SC.View.extend(SC.DelegateSupport, {
     // Complete a run loop so that the form's view layer is updated before the form is submitted
     SC.RunLoop.begin();
 
-    var viewLayer = this._form.get('_view_layer');
+    var viewLayer = this._form.get('_view_layer'), found = 0;
     for (var i = 0, e = viewLayer.length; i < e; i++) {
       if (viewLayer[i].name === name) {
         viewLayer[i].value = value;
+        found = 1;
         break;
       }
     }
+    
+    // Add if not found
+    if (found === 0) {
+      this._form.appendChild(
+        SC.FileFieldHiddenInputView.create({
+          name: name,
+          value: value
+        })
+      );
+    }    
+    
     SC.RunLoop.end();
   },
 
